@@ -84,12 +84,260 @@ Paste a sample of your recommender's output here as a text block so a reader can
 # e.g.:
 # User profile: genre=indie, mood=chill, energy=low
 # Recommendations:
-#   1. ...
-#   2. ...
-#   3. ...
+TOP RECOMMENDATIONS
+  for: genre=pop, mood=happy, energy=0.8
+============================================================
+
+1. Sunrise City  (by Neon Echo)
+   Score: 6.96
+   Reasons:
+     - matches your favorite genre (pop) (+3.0)
+     - matches your mood (happy) (+2.0)
+     - energy level is a great fit (+2.0)
+
+2. Gym Hero  (by Max Pulse)
+   Score: 4.74
+   Reasons:
+     - matches your favorite genre (pop) (+3.0)
+     - energy level is close to what you want (+1.7)
+
+3. Rooftop Lights  (by Indigo Parade)
+   Score: 3.92
+   Reasons:
+     - matches your mood (happy) (+2.0)
+     - energy level is a great fit (+1.9)
+
+4. Night Drive Loop  (by Neon Echo)
+   Score: 1.90
+   Reasons:
+     - energy level is a great fit (+1.9)
+
+5. Storm Runner  (by Voltline)
+   Score: 1.78
+   Reasons:
+     - energy level is close to what you want (+1.8)
+
+============================================================
+
 ```
 
 **Screenshot or video** *(optional)*: <!-- Insert a screenshot or demo video link here -->
+
+---
+
+## Stress Test Results
+
+To find out whether the scoring logic could be "tricked," I ran a set of
+adversarial / edge-case profiles (defined in `ADVERSARIAL_PROFILES` in
+`src/main.py`) through the same `recommend_songs` pipeline as the normal
+profile. Each block below is the raw terminal output, exactly as printed.
+
+**1. Conflicting energy vs. mood** — asks for high energy (`0.9`) but a
+low-energy mood. Genre + mood points swamp energy, so a calm classical track
+wins over every high-energy song:
+
+```
+  TOP RECOMMENDATIONS
+  for: genre=classical, mood=melancholy, energy=0.9
+============================================================
+
+1. Moonlit Sonata Drift  (by Elena Voss)
+   Score: 5.80
+   Reasons:
+     - matches your favorite genre (classical) (+3.0)
+     - matches your mood (melancholy) (+2.0)
+
+2. Storm Runner  (by Voltline)
+   Score: 1.98
+   Reasons:
+     - energy level is a great fit (+2.0)
+
+3. Gym Hero  (by Max Pulse)
+   Score: 1.94
+   Reasons:
+     - energy level is a great fit (+1.9)
+
+4. Neon Overdrive  (by Pulse Machine)
+   Score: 1.90
+   Reasons:
+     - energy level is a great fit (+1.9)
+
+5. Iron Verdict  (by Ashen Crown)
+   Score: 1.86
+   Reasons:
+     - energy level is a great fit (+1.9)
+```
+
+**2. Non-existent genre / mood** — `genre=polka`, `mood=sad` match no song, so
+both silently score 0 and the ranking quietly degrades to energy-only. No
+warning that the input was unrecognized:
+
+```
+  TOP RECOMMENDATIONS
+  for: genre=polka, mood=sad, energy=0.5
+============================================================
+
+1. Island Time  (by Coral Sound)
+   Score: 2.00
+   Reasons:
+     - energy level is a great fit (+2.0)
+
+2. Velvet Hours  (by Mira Sole)
+   Score: 1.96
+   Reasons:
+     - energy level is a great fit (+2.0)
+
+3. Dusty Backroads  (by Cole Harlan)
+   Score: 1.90
+   Reasons:
+     - energy level is a great fit (+1.9)
+
+4. Midnight Coding  (by LoRoom)
+   Score: 1.84
+   Reasons:
+     - energy level is a great fit (+1.8)
+
+5. Focus Flow  (by LoRoom)
+   Score: 1.80
+   Reasons:
+     - energy level is a great fit (+1.8)
+```
+
+**3. Boundary energy = 0.0** — rewards the lowest-energy songs. Note ranks 3–5
+score above 1.0 yet print "no strong matches" because a `0.3 < gap` energy
+contribution earns points but no reason string:
+
+```
+  TOP RECOMMENDATIONS
+  for: genre=none, mood=none, energy=0.0
+============================================================
+
+1. Spacewalk Thoughts  (by Orbit Bloom)
+   Score: 1.44
+   Reasons:
+     - energy level is close to what you want (+1.4)
+
+2. Moonlit Sonata Drift  (by Elena Voss)
+   Score: 1.40
+   Reasons:
+     - energy level is close to what you want (+1.4)
+
+3. Library Rain  (by Paper Lanterns)
+   Score: 1.30
+   Reasons: no strong matches with your preferences
+
+4. Coffee Shop Stories  (by Slow Stereo)
+   Score: 1.26
+   Reasons: no strong matches with your preferences
+
+5. Winds of Elsewhere  (by Hollow Pines)
+   Score: 1.24
+   Reasons: no strong matches with your preferences
+```
+
+**4. Boundary energy = 1.0** — the mirror image, rewarding the highest-energy
+songs in the catalog:
+
+```
+  TOP RECOMMENDATIONS
+  for: genre=none, mood=none, energy=1.0
+============================================================
+
+1. Iron Verdict  (by Ashen Crown)
+   Score: 1.94
+   Reasons:
+     - energy level is a great fit (+1.9)
+
+2. Neon Overdrive  (by Pulse Machine)
+   Score: 1.90
+   Reasons:
+     - energy level is a great fit (+1.9)
+
+3. Gym Hero  (by Max Pulse)
+   Score: 1.86
+   Reasons:
+     - energy level is a great fit (+1.9)
+
+4. Storm Runner  (by Voltline)
+   Score: 1.82
+   Reasons:
+     - energy level is a great fit (+1.8)
+
+5. Sunrise City  (by Neon Echo)
+   Score: 1.64
+   Reasons:
+     - energy level is close to what you want (+1.6)
+```
+
+**5. Case mismatch** — correct taste but capitalized (`Pop`, `Happy`).
+Exact-string matching drops all 5 categorical points, so the "perfect" pop/happy
+profile ranks songs by energy alone:
+
+```
+  TOP RECOMMENDATIONS
+  for: genre=Pop, mood=Happy, energy=0.82
+============================================================
+
+1. Sunrise City  (by Neon Echo)
+   Score: 2.00
+   Reasons:
+     - energy level is a great fit (+2.0)
+
+2. Rooftop Lights  (by Indigo Parade)
+   Score: 1.88
+   Reasons:
+     - energy level is a great fit (+1.9)
+
+3. Night Drive Loop  (by Neon Echo)
+   Score: 1.86
+   Reasons:
+     - energy level is a great fit (+1.9)
+
+4. Storm Runner  (by Voltline)
+   Score: 1.82
+   Reasons:
+     - energy level is a great fit (+1.8)
+
+5. Gym Hero  (by Max Pulse)
+   Score: 1.78
+   Reasons:
+     - energy level is close to what you want (+1.8)
+```
+
+**6. Acoustic vs. energy** — wants high energy (`0.95`) AND acoustic, but every
+acoustic song is low energy. The +1.0 acoustic bonus lets a mid-energy country
+track (`Dusty Backroads`, energy 0.55) beat true high-energy songs:
+
+```
+  TOP RECOMMENDATIONS
+  for: genre=none, mood=none, energy=0.95
+============================================================
+
+1. Dusty Backroads  (by Cole Harlan)
+   Score: 2.20
+   Reasons:
+     - has the acoustic sound you like (+1.0)
+
+2. Neon Overdrive  (by Pulse Machine)
+   Score: 2.00
+   Reasons:
+     - energy level is a great fit (+2.0)
+
+3. Gym Hero  (by Max Pulse)
+   Score: 1.96
+   Reasons:
+     - energy level is a great fit (+2.0)
+
+4. Iron Verdict  (by Ashen Crown)
+   Score: 1.96
+   Reasons:
+     - energy level is a great fit (+2.0)
+
+5. Midnight Coding  (by LoRoom)
+   Score: 1.94
+   Reasons:
+     - has the acoustic sound you like (+1.0)
+```
 
 ---
 
@@ -100,6 +348,32 @@ Use this section to document the experiments you ran. For example:
 - What happened when you changed the weight on genre from 2.0 to 0.5
 - What happened when you added tempo or valence to the score
 - How did your system behave for different types of users
+
+### Accuracy & Surprises
+
+**The surprise:** In the starter `pop / happy / energy=0.8` profile, **"Gym Hero"
+ranks #2 (score 4.74) even though it is tagged `mood=intense`, not `happy`.** A
+song that is explicitly *not* happy beats "Rooftop Lights" (#3, score 3.92),
+which *is* tagged `happy`. For a "happy" request, that feels backwards.
+
+**Why it happens — tracing the actual weights in `recommender.py`:**
+
+- `GENRE_POINTS = 3.0`, `MOOD_POINTS = 2.0`, `ENERGY_MAX_POINTS = 2.0`.
+- "Gym Hero" is `pop` (matches genre → **+3.0**), `intense` (no mood match → +0),
+  energy `0.93` vs target `0.8` → gap `0.13`, so `2.0 * (1 - 0.13) = ` **+1.74**.
+  Total = **4.74**.
+- "Rooftop Lights" is `indie pop` (**not** `pop`, so genre → +0), `happy`
+  (matches mood → **+2.0**), energy `0.76` vs `0.8` → gap `0.04`, so
+  `2.0 * (1 - 0.04) = ` **+1.92**. Total = **3.92**.
+
+So a single genre match (`+3.0`) outweighs a mood match (`+2.0`) entirely, and
+"Rooftop Lights" is punished for being `indie pop` rather than exactly `pop`.
+Because genre is weighted higher than mood **and** matching is exact-string, the
+recommender treats "right genre, wrong mood" as a better fit than "wrong genre,
+right mood" — which is why an *intense* workout song keeps surfacing for a
+*happy* listener. The fix would be either lowering `GENRE_POINTS` relative to
+`MOOD_POINTS`, or grouping related genres (e.g. `indie pop` ≈ `pop`) so a
+near-miss genre isn't scored as a total miss.
 
 ---
 
