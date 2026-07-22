@@ -16,6 +16,9 @@ Replace this paragraph with your own summary of what your version does.
 ---
 
 ## How The System Works
+real world music recommenders work by translating a listener started and implied preferences into compared numeric scores, then they rank condidates byy how well they match. So they score and then sort . My version would prioritize genre and mood as the strongest signals, since they capture kind of music and what situation someone wants. Features like energy, acousticness, valencfe, and danceability are scored b closeness to a targe rathe than the magnituede since more enegric does not rly mean better, only closer to what the use asked for. 
+
+I would have like an id, title, artist, genre, mood, energy, calence, danceability, acoustiness,tempo bpm. The user profile features would be like fav genre, fav mood, fav energy, target tempo, and target energy
 
 Explain your design in plain language.
 
@@ -28,6 +31,13 @@ Some prompts to answer:
 - How do you choose which songs to recommend
 
 You can include a simple diagram or bullet list if helpful.
+
+Finalized algo recipe.
+Step 1 - Have a taste profile. So i will have a dictonary of target values on the same scare as the song features.
+Step 2 - we will rankfeatures by how cosly a miss is basically weights. 
+Step 3 - Scoring - so bascially there will be a categorical match and then we wills core by that and closeness, then boolean preference, and sum of the weight and contribution. It will return a score and the reasons.
+Step 4 - Then you will score every song with step 3 and it wll sort by score. Then we wills lice to the top 5 with a tie breaker being id, so the results aer repoducable.
+Step 5 - turn reasons list into a sentence for explaining
 
 ---
 
